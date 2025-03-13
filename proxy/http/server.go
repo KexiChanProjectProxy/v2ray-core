@@ -38,6 +38,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	redisClient := redis.NewClient(&redis.Options{
 		Network: "unix",
 		Addr:    "/run/redis/redis-server.sock", // hardcoded UNIX socket path to Redis
+		DB:      3,
 	})
 	s := &Server{
 		config:        config,
