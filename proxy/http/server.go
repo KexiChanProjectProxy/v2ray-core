@@ -4,11 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/base64"
-	"io"
-	"net/http"
-	"strings"
-	"time"
-
+	"github.com/go-redis/redis/v8"
 	core "github.com/v2fly/v2ray-core/v5"
 	"github.com/v2fly/v2ray-core/v5/common"
 	"github.com/v2fly/v2ray-core/v5/common/buf"
@@ -23,20 +19,30 @@ import (
 	"github.com/v2fly/v2ray-core/v5/features/policy"
 	"github.com/v2fly/v2ray-core/v5/features/routing"
 	"github.com/v2fly/v2ray-core/v5/transport/internet"
+	"io"
+	"net/http"
+	"strings"
+	"time"
 )
 
 // Server is an HTTP proxy server.
 type Server struct {
 	config        *ServerConfig
 	policyManager policy.Manager
+	redisClient   *redis.Client
 }
 
-// NewServer creates a new HTTP inbound handler.
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	v := core.MustFromContext(ctx)
+	// Hardcoded Redis configuration using a UNIX socket.
+	redisClient := redis.NewClient(&redis.Options{
+		Network: "unix",
+		Addr:    "/run/redis/redis-server.sock", // hardcoded UNIX socket path to Redis
+	})
 	s := &Server{
 		config:        config,
 		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
+		redisClient:   redisClient,
 	}
 
 	return s, nil
@@ -106,17 +112,23 @@ Start:
 		return trace
 	}
 
-	if len(s.config.Accounts) > 0 {
-		user, pass, ok := parseBasicAuth(request.Header.Get("Proxy-Authorization"))
-		if !ok || !s.config.HasAccount(user, pass) {
-			return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\n")))
-		}
-		if inbound != nil {
-			inbound.User.Email = user
-		}
+	// Use Redis for authentication with hardcoded config.
+	user, pass, ok := parseBasicAuth(request.Header.Get("Proxy-Authorization"))
+	if !ok {
+		return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\n")))
 	}
 
-	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WriteToLog(session.ExportIDToError(ctx))
+	// Look up the password in Redis using the username as the key.
+	redisPass, err := s.redisClient.Get(ctx, user).Result()
+	if err != nil || redisPass != pass {
+		return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\n")))
+	}
+	if inbound != nil {
+		inbound.User.Email = user
+	}
+
+	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").
+		WriteToLog(session.ExportIDToError(ctx))
 	if err := conn.SetReadDeadline(time.Time{}); err != nil {
 		newError("failed to clear read deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
