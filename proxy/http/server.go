@@ -3,7 +3,7 @@ package http
 import (
     "bufio"
     "context"
-    "encoding/base64"
+    "os"
     "github.com/golang-jwt/jwt/v4" // <-- NEW
     core "github.com/v2fly/v2ray-core/v5"
     "github.com/v2fly/v2ray-core/v5/common"
