@@ -152,9 +152,11 @@ Start:
 	if len(s.config.Accounts) > 0 {
 		user, pass, ok := parseBasicAuth(request.Header.Get("Proxy-Authorization"))
 		if !ok {
+			errors.New("failed to parse basic headers")
             return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\n")))
         }
         if err := verifyCredentials(user, pass); err != nil {
+			errors.New("failed to verify credits)
             return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\n")))
         }
 		if inbound != nil {
