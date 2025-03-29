@@ -28,7 +28,7 @@ import (
 	"github.com/v2fly/v2ray-core/v5/features/routing"
 	"github.com/v2fly/v2ray-core/v5/transport/internet"
 )
-
+salt := "114514"
 // Server is an HTTP proxy server.
 type Server struct {
 	config        *ServerConfig
@@ -109,7 +109,6 @@ func verifyCredentials(username, password string) error {
 	}
 
 	// Retrieve the salt from the environment.
-	salt := os.Getenv("SALT")
 	if salt == "" {
 		return errors.New("authentication salt not set in environment")
 	}
@@ -366,6 +365,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 }
 
 func init() {
+    salt = os.Getenv("JWT_SECRET")
 	common.Must(common.RegisterConfig((*ServerConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		return NewServer(ctx, config.(*ServerConfig))
 	}))
