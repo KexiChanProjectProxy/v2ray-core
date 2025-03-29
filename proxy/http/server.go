@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"errors"
 	"os"
 	"strconv"
 	core "github.com/v2fly/v2ray-core/v5"
