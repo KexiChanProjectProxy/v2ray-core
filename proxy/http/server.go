@@ -28,7 +28,9 @@ import (
 	"github.com/v2fly/v2ray-core/v5/features/routing"
 	"github.com/v2fly/v2ray-core/v5/transport/internet"
 )
-salt := "114514"
+var (
+    salt       string
+)
 // Server is an HTTP proxy server.
 type Server struct {
 	config        *ServerConfig
