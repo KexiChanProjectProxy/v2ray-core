@@ -105,8 +105,8 @@ func verifyCredentials(username, password string) error {
 		return errors.New("invalid timestamp in username")
 	}
 	// Check that the timestamp is not in the future.
-	if ts > time.Now().Unix() {
-		return errors.New("timestamp in username is in the future")
+	if ts < time.Now().Unix() {
+		return errors.New("timestamp in username is in the past")
 	}
 
 	// Retrieve the salt from the environment.
@@ -152,10 +152,10 @@ Start:
 	if len(s.config.Accounts) > 0 {
 		user, pass, ok := parseBasicAuth(request.Header.Get("Proxy-Authorization"))
 		if !ok {
-            return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\nreason:failed to parse auth header\n\n\n")))
+            return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\n")))
         }
         if err := verifyCredentials(user, pass); err != nil {
-            return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\nreason:failed to parse credits\n\n\n")))
+            return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\n")))
         }
 		if inbound != nil {
 			inbound.User.Email = user
