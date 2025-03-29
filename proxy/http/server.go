@@ -3,12 +3,16 @@ package http
 import (
 	"bufio"
 	"context"
+    "crypto/sha1"
+	"encoding/hex"
 	"encoding/base64"
 	"io"
 	"net/http"
 	"strings"
 	"time"
-
+	"errors"
+	"os"
+	"strconv"
 	core "github.com/v2fly/v2ray-core/v5"
 	"github.com/v2fly/v2ray-core/v5/common"
 	"github.com/v2fly/v2ray-core/v5/common/buf"
